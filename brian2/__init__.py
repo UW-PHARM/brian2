@@ -70,6 +70,7 @@ __version__ = '2.1+git'
 __release_date__ = '2016-11-18'
 
 from brian2.only import *
+from brian2.ibm_lib import *
 
 # Check for outdated dependency versions
 def _check_dependency_version(name, version):
