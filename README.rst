@@ -1,3 +1,21 @@
+Brian2 with IBM TrueNorth Spiking NN Library
+============================================
+Below you will find the README for the original Brian2 project (under the Brian2 header).
+
+To install our version of Brian2, we recommend using `Anaconda <https://www.continuum.io/downloads>`_ to isolate your environment.
+
+With Anaconda installed, run
+::
+	conda create brian-sim
+	source activate brian-sim
+	python setup.py install
+
+Without Anaconda, simply run
+::
+	python setup.py install
+
+You can find example code in ``examples/ibm_lib``.
+
 Brian2
 ======
 
