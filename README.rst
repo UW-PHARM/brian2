@@ -7,7 +7,7 @@ To install our version of Brian2, we recommend using `Anaconda <https://www.cont
 
 With Anaconda installed, run
 ::
-	conda create brian-sim
+	conda env create -f conda_environment.yml
 	source activate brian-sim
 	python setup.py install
 
