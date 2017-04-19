@@ -2,12 +2,6 @@ from brian2 import *
 import matplotlib.pyplot as plt
 from brian2.ibm_lib import *
 
-def find_idx(a, func):
-	return [i for (i, val) in enumerate(a) if func(val)]
-
-def filter_idx(a, idx):
-	return [a[i] for i in idx]
-
 start_scope()
 
 # Timing parameters

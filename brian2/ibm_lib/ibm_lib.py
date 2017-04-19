@@ -1,5 +1,11 @@
 from numpy.random import rand
 
+def find_idx(a, func):
+	return [i for (i, val) in enumerate(a) if func(val)]
+
+def filter_idx(a, idx):
+	return [a[i] for i in idx]
+
 def gen_spike_trains(tick, num_ticks, p):
 	times = []
 	indices = []
