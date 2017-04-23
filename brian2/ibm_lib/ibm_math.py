@@ -17,8 +17,8 @@ def create_adder(tau, input_group, input_idx):
 	output_group = create_ibm_neuron(tau, 1, Vr, epsilon, lmda, alpha, beta, kappa, gamma)
 
 	# Create synapse connections
-	synapse = Synapses(input_group, output_group, 'w : 1', on_pre='v_post += alpha')
+	synapse = Synapses(input_group, output_group, 'w : volt', on_pre='v_post += w')
 	synapse.connect(i = input_idx, j = 0)
-	synapse.w = '1'
+	synapse.w = '1 * volt'
 
 	return output_group, synapse
