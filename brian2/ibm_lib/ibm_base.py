@@ -144,7 +144,7 @@ def create_ibm_neuron(tau, N, Vr, epsilon, lmda, alpha, beta, kappa, gamma, lmda
 	else:
 		group.up_bound = 393216 * volt
 		group.low_bound = -393216 * volt
-	group.run_regularly(prng_update, dt=0.01*ms)
+	group.run_regularly(prng_update, dt=0.01*tau)
 	group.run_on_event('neg_thresh', neg_reset)
 
 	return group

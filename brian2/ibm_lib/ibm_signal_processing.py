@@ -26,6 +26,6 @@ def create_decorrelator(tau, input_group, input_idx):
 	synapse.connect(i = input_idx, j = 0)
 	synapse.w = '16 * volt'
 	synapse.w_fb = '-16 * volt'
-	synapse.post.delay = tau
+	# synapse.post.delay = tau
 
 	return decorrelator_group, synapse
