@@ -1,4 +1,8 @@
 from numpy.random import rand
+from brian2.only import defaultclock
+
+def setup_brian(tau):
+	defaultclock.dt = tau
 
 def find_idx(a, func):
 	return [i for (i, val) in enumerate(a) if func(val)]

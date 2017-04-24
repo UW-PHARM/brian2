@@ -8,6 +8,9 @@ start_scope()
 num_ticks = 3000
 tau = 1 * ms
 
+# Setup Brian with IBM lib
+setup_brian(tau)
+
 # Input spike train neurons
 indices, times = gen_spike_trains(tau, num_ticks, [0.1, 0.2])
 input_group = SpikeGeneratorGroup(2, indices, times)

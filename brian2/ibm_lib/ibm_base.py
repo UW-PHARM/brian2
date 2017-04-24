@@ -6,21 +6,21 @@ from brian2.units import *
 
 def lfsr_rand(lfsr_reg):
 	# XNOR taps from 32, 22, 2, 1
-	bit32 = (lfsr_reg >> 32) & 1
-	bit22 = (lfsr_reg >> 22) & 1
-	bit2 = (lfsr_reg >> 2) & 1
-	bit1 = (lfsr_reg >> 1) & 1
-	shift_in = ~(((bit32 ^ bit22) ^ bit2) ^ bit1) & 1
+	bit32 = (lfsr_reg >> 31) & 1
+	bit22 = (lfsr_reg >> 21) & 1
+	bit2 = (lfsr_reg >> 1) & 1
+	bit1 = lfsr_reg & 1
+	shift_in = (((bit32 ^ bit22) ^ bit2) ^ bit1) & 1
 	lfsr_reg = ((lfsr_reg << 1) & (2 ** 32 - 1)) | shift_in
 
 	return lfsr_reg
 lfsr_rand_cpp = {'support_code': '''
 	uint32_t _lfsr_rand(uint32_t lfsr_reg) {
-		uint8_t bit32 = (lfsr_reg >> 32) & 1;
-		uint8_t bit22 = (lfsr_reg >> 22) & 1;
-		uint8_t bit2 = (lfsr_reg >> 2) & 1;
-		uint8_t bit1 = (lfsr_reg >> 1) & 1;
-		uint8_t shift_in = ~(((bit32 ^ bit22) ^ bit2) ^ bit1) & 1;
+		uint8_t bit32 = (lfsr_reg >> 31) & 1;
+		uint8_t bit22 = (lfsr_reg >> 31) & 1;
+		uint8_t bit2 = (lfsr_reg >> 1) & 1;
+		uint8_t bit1 = lfsr_reg & 1;
+		uint8_t shift_in = (((bit32 ^ bit22) ^ bit2) ^ bit1) & 1;
 		lfsr_reg = (lfsr_reg << 1) | shift_in;
 
 		return lfsr_reg;
@@ -28,20 +28,37 @@ lfsr_rand_cpp = {'support_code': '''
 	'''}
 lfsr_rand_cython = {'support_code': '''
 	cdef uint32_t _lfsr_rand(cdef uint32_t lfsr_reg):
-		cdef uint8_t bit32 = (lfsr_reg >> 32) & 1
-		cdef uint8_t bit22 = (lfsr_reg >> 22) & 1
-		cdef uint8_t bit2 = (lfsr_reg >> 2) & 1
-		cdef uint8_t bit1 = (lfsr_reg >> 1) & 1
-		cdef uint8_t shift_in = ~(((bit32 ^ bit22) ^ bit2) ^ bit1) & 1
+		cdef uint8_t bit32 = (lfsr_reg >> 31) & 1
+		cdef uint8_t bit22 = (lfsr_reg >> 21) & 1
+		cdef uint8_t bit2 = (lfsr_reg >> 1) & 1
+		cdef uint8_t bit1 = lfsr_reg & 1
+		cdef uint8_t shift_in = (((bit32 ^ bit22) ^ bit2) ^ bit1) & 1
 		lfsr_reg = (lfsr_reg << 1) | shift_in
 
 		return lfsr_reg
 	'''}
-lfsr_rand_obj = Function(lfsr_rand, arg_units=[1], return_unit=1, arg_types=['integer', 'integer'], return_type='integer')
+lfsr_rand_obj = Function(lfsr_rand, arg_units=[1], return_unit=1, arg_types=['integer'], return_type='integer')
 lfsr_rand_obj.implementations.add_implementation(NumpyCodeGenerator, code=lfsr_rand)
 lfsr_rand_obj.implementations.add_implementation(CPPCodeGenerator, name='_lfsr_rand', code=lfsr_rand_cpp)
 # lfsr_rand_obj.implementations.add_implementation(CythonCodeGenerator, name='_lfsr_rand', code=lfsr_rand_cython)
 DEFAULT_FUNCTIONS['lfsr_rand'] = lfsr_rand_obj
+
+def get_prn(lfsr_reg, curr_prn):
+	# XNOR taps from 32, 22, 2, 1
+	return ((lfsr_reg >> 31) & 1) | ((curr_prn << 1) & (2 ** 32 - 1))
+get_prn_cpp = {'support_code': '''
+	uint32_t _get_prn(uint32_t lfsr_reg, uint32_t curr_prn) {
+		return ((lfsr_reg >> 31) & 1) | (curr_prn << 1);
+	}
+	'''}
+get_prn_cython = {'support_code': '''
+	cdef uint32_t _lfsr_rand(cdef uint32_t lfsr_reg, cdef uint32_t curr_prn):
+		return ((lfsr_reg >> 31) & 1) | (curr_prn << 1)
+	'''}
+get_prn_obj = Function(get_prn, arg_units=[1, 1], return_unit=1, arg_types=['integer', 'integer'], return_type='integer')
+get_prn_obj.implementations.add_implementation(NumpyCodeGenerator, code=get_prn)
+get_prn_obj.implementations.add_implementation(CPPCodeGenerator, name='_get_prn', code=get_prn_cpp)
+DEFAULT_FUNCTIONS['get_prn'] = get_prn_obj
 
 def bit_and(a, b):
 	return a & b
@@ -73,23 +90,42 @@ def create_ibm_neuron(tau, N, Vr, epsilon, lmda, alpha, beta, kappa, gamma, lmda
 	lmda_prob : boolean
 	thr_mask : integer
 	prn : integer
+	lfsr : integer
+	up_bound : volt
+	low_bound : volt
 	'''
 
-	thresh = "v >= (alpha + eta)"
+	thresh = "v > up_bound or v >= (alpha + eta)"
+	neg_thresh = "v < low_bound or v < -1 * (beta * kappa + (beta + eta) * (1 - kappa))"
 
 	reset = '''
-	a = int(gamma == 0) * (-1 * Vr)
-	b = int(gamma == 1) * (v + beta + eta)
+	a = int(gamma == 0) * (Vr)
+	b = int(gamma == 1) * (v - (alpha + eta))
 	c = int(gamma == 2) * (v)
-	d = int(gamma == 0) * (Vr)
-	e = int(gamma == 1) * (v - (alpha + eta))
+	p = a + b + c
+	v = int(v > up_bound) * up_bound + int(v <= up_bound) * p
+	'''
+	neg_reset = '''
+	d = int(gamma == 0) * (-1 * Vr)
+	e = int(gamma == 1) * (v + beta + eta)
 	f = int(gamma == 2) * (v)
-	p = d + e + f
-	n = -beta * kappa + (1 - kappa) * (a + b + c)
-	v = int(v >= (alpha + eta)) * p + int(v < -(beta * kappa + (beta + eta) * (1 - kappa))) * n
+	n = -beta * kappa + (1 - kappa) * (d + e + f)
+	v = int(v < low_bound) * low_bound + int(v >= low_bound) * n
 	'''
 
-	group = NeuronGroup(N, eqs, threshold=thresh, reset=reset, method='euler', namespace=namespace)
+	prng_update = '''
+	prn = get_prn(lfsr, prn)
+	lfsr = lfsr_rand(lfsr)
+	'''
+
+	# Initialize LFSR
+	lfsr_init = seed
+	prn_init = 0
+	for i in range(100):
+		prn_init = get_prn(lfsr_init, prn_init)
+		lfsr_init = lfsr_rand(lfsr_init)
+
+	group = NeuronGroup(N, eqs, threshold=thresh, reset=reset, method='euler', namespace=namespace, events={'neg_thresh' : neg_thresh})
 	group.Vr = Vr
 	group.epsilon = epsilon
 	group.lmda = lmda
@@ -97,8 +133,18 @@ def create_ibm_neuron(tau, N, Vr, epsilon, lmda, alpha, beta, kappa, gamma, lmda
 	group.beta = beta
 	group.kappa = kappa
 	group.gamma = gamma
+	group.lmda_prob = lmda_prob
+	group.thr_mask = thr_mask
 	group.v = 0
-	group.prn = seed
-	group.run_regularly('prn = lfsr_rand(prn)')
+	group.prn = prn_init
+	group.lfsr = lfsr_init
+	if gamma == 2:
+		group.up_bound = alpha + thr_mask * volt
+		group.low_bound = -1 * (beta + thr_mask * volt)
+	else:
+		group.up_bound = 393216 * volt
+		group.low_bound = -393216 * volt
+	group.run_regularly(prng_update, dt=0.01*ms)
+	group.run_on_event('neg_thresh', neg_reset)
 
 	return group
