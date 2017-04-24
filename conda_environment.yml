@@ -49,7 +49,4 @@ dependencies:
 - wheel=0.29.0=py36_0
 - xz=5.2.2=1
 - zlib=1.2.8=3
-- pip:
-  - brian2==2.1+git
-prefix: /home/daruwalla/.conda/envs/brian-sim
 
