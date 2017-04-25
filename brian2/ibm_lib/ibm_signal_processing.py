@@ -4,6 +4,10 @@ from brian2.units import *
 from .ibm_base import *
 
 def create_decorrelator(tau, input_group, input_idx):
+	# Check length of input_idx
+	if len(input_idx) != 1:
+		raise ValueError('create_decorrelator accepts input_idx of size 1 only.')
+		
 	# Decorrelator neuron parameters
 	Vr = 0 * volt
 	epsilon = 1
