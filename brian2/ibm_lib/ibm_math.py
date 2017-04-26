@@ -47,3 +47,23 @@ def create_max_subtractor(tau, input_group, input_idx):
 	synapse.w[input_idx[1], 0] = '-1 * volt'
 
 	return output_group, synapse
+
+def create_multiplier(tau, input_group, input_idx):
+	# Multiplier neuron parameters
+	Vr = 0 * volt
+	epsilon = 1
+	lmda = -1 * volt
+	alpha = 1 * volt
+	beta = 0 * volt
+	kappa = 1
+	gamma = 0
+
+	# Adder neuron
+	output_group = create_ibm_neuron(tau, 1, Vr, epsilon, lmda, alpha, beta, kappa, gamma)
+
+	# Create synapse connections
+	synapse = Synapses(input_group, output_group, 'w : volt', on_pre='v_post += w')
+	synapse.connect(i = input_idx, j = 0)
+	synapse.w = '1 * volt'
+
+	return output_group, synapse
