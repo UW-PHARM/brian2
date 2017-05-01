@@ -1,7 +1,6 @@
 from brian2.only import NeuronGroup
 from brian2.core.functions import Function, DEFAULT_FUNCTIONS
-from brian2.only import CPPCodeGenerator, NumpyCodeGenerator
-# from brian2.codegen.generators import CythonCodeGenerator
+from brian2.only import CPPCodeGenerator, NumpyCodeGenerator, CythonCodeGenerator
 from brian2.units import *
 
 def lfsr_rand(lfsr_reg):
@@ -26,21 +25,21 @@ lfsr_rand_cpp = {'support_code': '''
 		return lfsr_reg;
 	}
 	'''}
-lfsr_rand_cython = {'support_code': '''
-	cdef uint32_t _lfsr_rand(cdef uint32_t lfsr_reg):
-		cdef uint8_t bit32 = (lfsr_reg >> 31) & 1
-		cdef uint8_t bit22 = (lfsr_reg >> 21) & 1
-		cdef uint8_t bit2 = (lfsr_reg >> 1) & 1
-		cdef uint8_t bit1 = lfsr_reg & 1
-		cdef uint8_t shift_in = (((bit32 ^ bit22) ^ bit2) ^ bit1) & 1
+lfsr_rand_cython = '''
+	cdef int _lfsr_rand(int lfsr_reg):
+		cdef int bit32 = (lfsr_reg >> 31) & 1
+		cdef int bit22 = (lfsr_reg >> 21) & 1
+		cdef int bit2 = (lfsr_reg >> 1) & 1
+		cdef int bit1 = lfsr_reg & 1
+		cdef int shift_in = (((bit32 ^ bit22) ^ bit2) ^ bit1) & 1
 		lfsr_reg = (lfsr_reg << 1) | shift_in
 
 		return lfsr_reg
-	'''}
+	'''
 lfsr_rand_obj = Function(lfsr_rand, arg_units=[1], return_unit=1, arg_types=['integer'], return_type='integer')
 lfsr_rand_obj.implementations.add_implementation(NumpyCodeGenerator, code=lfsr_rand)
 lfsr_rand_obj.implementations.add_implementation(CPPCodeGenerator, name='_lfsr_rand', code=lfsr_rand_cpp)
-# lfsr_rand_obj.implementations.add_implementation(CythonCodeGenerator, name='_lfsr_rand', code=lfsr_rand_cython)
+lfsr_rand_obj.implementations.add_implementation(CythonCodeGenerator, name='_lfsr_rand', code=lfsr_rand_cython)
 DEFAULT_FUNCTIONS['lfsr_rand'] = lfsr_rand_obj
 
 def get_prn(lfsr_reg, curr_prn):
@@ -51,20 +50,26 @@ get_prn_cpp = {'support_code': '''
 		return ((lfsr_reg >> 31) & 1) | (curr_prn << 1);
 	}
 	'''}
-get_prn_cython = {'support_code': '''
-	cdef uint32_t _lfsr_rand(cdef uint32_t lfsr_reg, cdef uint32_t curr_prn):
+get_prn_cython = '''
+	cdef int _get_prn(int lfsr_reg, int curr_prn):
 		return ((lfsr_reg >> 31) & 1) | (curr_prn << 1)
-	'''}
+	'''
 get_prn_obj = Function(get_prn, arg_units=[1, 1], return_unit=1, arg_types=['integer', 'integer'], return_type='integer')
 get_prn_obj.implementations.add_implementation(NumpyCodeGenerator, code=get_prn)
 get_prn_obj.implementations.add_implementation(CPPCodeGenerator, name='_get_prn', code=get_prn_cpp)
+get_prn_obj.implementations.add_implementation(CythonCodeGenerator, name='_get_prn', code=get_prn_cython)
 DEFAULT_FUNCTIONS['get_prn'] = get_prn_obj
 
 def bit_and(a, b):
 	return a & b
+bit_and_cython = '''
+	cdef int _bit_and(int a, int b):
+		return a & b
+	'''
 bit_and_obj = Function(bit_and, arg_units=[1, 1], return_unit=1, arg_types=['integer', 'integer'], return_type='integer')
 bit_and_obj.implementations.add_implementation(NumpyCodeGenerator, code=bit_and)
 bit_and_obj.implementations.add_implementation(CPPCodeGenerator, name='operator&', code=None)
+bit_and_obj.implementations.add_implementation(CythonCodeGenerator, name='_bit_and', code=bit_and_cython)
 DEFAULT_FUNCTIONS['bit_and'] = bit_and_obj
 
 def create_ibm_neuron(tau, N, Vr, epsilon, lmda, alpha, beta, kappa, gamma, lmda_prob=False, thr_mask=0, seed=(2 ** 32 - 1)):

@@ -1,6 +1,5 @@
 import itertools
 
-from brian2.devices.device import all_devices
 from brian2.utils.stringtools import word_substitute, deindent, indent
 from brian2.parsing.rendering import NodeRenderer
 from brian2.parsing.bast import brian_dtype_from_dtype
@@ -338,19 +337,13 @@ cdef double _rand(int _idx):
 
 randn_code = rand_code.replace('rand', 'randn').replace('randnom', 'random')
 
-device = all_devices['runtime']
 DEFAULT_FUNCTIONS['rand'].implementations.add_implementation(CythonCodeGenerator,
                                                              code=rand_code,
-                                                             name='_rand',
-                                                             namespace={'_rand_buffer': device.rand_buffer,
-                                                                        '_rand_buffer_index': device.rand_buffer_index})
+                                                             name='_rand')
 
 DEFAULT_FUNCTIONS['randn'].implementations.add_implementation(CythonCodeGenerator,
                                                               code=randn_code,
-                                                              name='_randn',
-                                                              namespace={
-                                                                  '_randn_buffer': device.randn_buffer,
-                                                                  '_randn_buffer_index': device.randn_buffer_index})
+                                                              name='_randn')
 
 sign_code = '''
 ctypedef fused _to_sign:

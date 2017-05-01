@@ -11,5 +11,5 @@ from .numpy_generator import *
 try:
     from .cython_generator import *
 except ImportError:
-    pass # todo: raise a warning?
+    raise ImportError('Could not import cython_generator.')
 

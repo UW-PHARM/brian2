@@ -6,4 +6,4 @@ from .ibm_matrix import *
 
 # Automatically set target as Python fallback
 from brian2.core.core_preferences import *
-prefs.codegen.target = 'numpy'
+prefs.codegen.target = 'cython'

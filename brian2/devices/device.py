@@ -9,11 +9,12 @@ import numpy as np
 
 from brian2.memory.dynamicarray import DynamicArray, DynamicArray1D
 from brian2.codegen.targets import codegen_targets
+from brian2.codegen.generators.cython_generator import CythonCodeGenerator
 from brian2.codegen.runtime.numpy_rt import NumpyCodeObject
 from brian2.core.names import find_name
 from brian2.core.preferences import prefs
 from brian2.core.variables import ArrayVariable, DynamicArrayVariable
-from brian2.core.functions import Function
+from brian2.core.functions import Function, DEFAULT_FUNCTIONS
 from brian2.units import ms
 from brian2.utils.logger import get_logger
 from brian2.utils.stringtools import code_representation, indent
@@ -631,4 +632,5 @@ def seed(seed=None):
 
 runtime_device = RuntimeDevice()
 all_devices['runtime'] = runtime_device
-
+DEFAULT_FUNCTIONS['rand'].implementations[CythonCodeGenerator]._namespace = {'_rand_buffer': runtime_device.rand_buffer, '_rand_buffer_index': runtime_device.rand_buffer_index}
+DEFAULT_FUNCTIONS['randn'].implementations[CythonCodeGenerator]._namespace = {'_randn_buffer': runtime_device.randn_buffer, '_randn_buffer_index': runtime_device.randn_buffer_index}
