@@ -2,7 +2,7 @@ from brian2.only import NeuronGroup
 from brian2.only import Synapses
 from brian2.units import *
 from .ibm_base import *
-import pdb
+from numpy import amax
 
 def create_fixed_gain_dot_product(tau, input_group, input_idx, weights):
 	# Check dimension agreement
@@ -10,7 +10,11 @@ def create_fixed_gain_dot_product(tau, input_group, input_idx, weights):
 		raise ValueError('Length of input_idx and weights should be equal for create_fixed_gain_dot_product')
 
 	# Compute max threshold
-	thr = 255 / max(weights)
+	max_val = amax(weights)
+	if max_val > 0:
+		thr = 255 / max_val
+	else:
+		thr = 0
 
 	# Neuron parameters
 	Vr = 0 * volt
@@ -27,8 +31,7 @@ def create_fixed_gain_dot_product(tau, input_group, input_idx, weights):
 	# Create synapse connections
 	synapse = Synapses(input_group, output_group, 'w : volt', on_pre='v_post += w')
 	synapse.connect(i = input_idx, j = 0)
-	for i in range(len(weights)):
-		synapse.w[input_idx[i], 0] = int(thr * weights[i]) * volt
+	synapse.w[input_idx] = (thr * volt) * weights
 
 	return output_group, synapse
 
