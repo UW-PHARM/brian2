@@ -31,6 +31,8 @@ class NodeRenderer(object):
       'Not': 'not',
       'UAdd': '+',
       'USub': '-',
+      # Binary ops
+      'BitAnd': '&',
       # Bool ops
       'And': 'and',
       'Or': 'or',
@@ -117,9 +119,8 @@ class NodeRenderer(object):
         # not do "(3) + ((4) + (5))"
         op_class = op.__class__.__name__
         # Give a more useful error message when using bit-wise operators
-        if op_class in ['BitXor', 'BitAnd', 'BitOr']:
+        if op_class in ['BitXor', 'BitOr']:
             correction = {'BitXor': ('^', '**'),
-                          'BitAnd': ('&', 'and'),
                           'BitOr': ('|', 'or')}.get(op_class)
             raise SyntaxError('The operator "{}" is not supported, use "{}" '
                               'instead.'.format(correction[0], correction[1]))
