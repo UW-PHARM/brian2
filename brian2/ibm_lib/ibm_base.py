@@ -3,6 +3,23 @@ from brian2.core.functions import Function, DEFAULT_FUNCTIONS
 from brian2.only import CPPCodeGenerator, NumpyCodeGenerator, CythonCodeGenerator
 from brian2.units import *
 
+def bit_and(a, b):
+	return a & b
+bit_and_cpp = {'support_code': '''
+	uint32_t _bit_and(uint32_t a, uint32_t b) {
+		return a & b;
+	}
+	'''}
+bit_and_cython = '''
+	cdef int _bit_and(int a, int b):
+		return a & b
+	'''
+bit_and_obj = Function(bit_and, arg_units=[1, 1], return_unit=1, arg_types=['integer', 'integer'], return_type='integer')
+bit_and_obj.implementations.add_implementation(NumpyCodeGenerator, code=bit_and)
+bit_and_obj.implementations.add_implementation(CPPCodeGenerator, name='_bit_and', code=bit_and_cpp)
+bit_and_obj.implementations.add_implementation(CythonCodeGenerator, name='_bit_and', code=bit_and_cython)
+DEFAULT_FUNCTIONS['bit_and'] = bit_and_obj
+
 def lfsr_rand(lfsr_reg):
 	# XNOR taps from 32, 22, 2, 1
 	bit32 = (lfsr_reg >> 31) & 1
@@ -59,18 +76,6 @@ get_prn_obj.implementations.add_implementation(NumpyCodeGenerator, code=get_prn)
 get_prn_obj.implementations.add_implementation(CPPCodeGenerator, name='_get_prn', code=get_prn_cpp)
 get_prn_obj.implementations.add_implementation(CythonCodeGenerator, name='_get_prn', code=get_prn_cython)
 DEFAULT_FUNCTIONS['get_prn'] = get_prn_obj
-
-def bit_and(a, b):
-	return a & b
-bit_and_cython = '''
-	cdef int _bit_and(int a, int b):
-		return a & b
-	'''
-bit_and_obj = Function(bit_and, arg_units=[1, 1], return_unit=1, arg_types=['integer', 'integer'], return_type='integer')
-bit_and_obj.implementations.add_implementation(NumpyCodeGenerator, code=bit_and)
-bit_and_obj.implementations.add_implementation(CPPCodeGenerator, name='operator&', code=None)
-bit_and_obj.implementations.add_implementation(CythonCodeGenerator, name='_bit_and', code=bit_and_cython)
-DEFAULT_FUNCTIONS['bit_and'] = bit_and_obj
 
 def create_ibm_neuron(tau, N, Vr, epsilon, lmda, alpha, beta, kappa, gamma, lmda_prob=False, thr_mask=0, seed=(2 ** 32 - 1)):
 	namespace = {

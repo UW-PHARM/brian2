@@ -1,6 +1,7 @@
 from numpy.random import rand
 from brian2.only import defaultclock
 from numpy import zeros, ones, arange
+import sys
 from matplotlib.pyplot import figure, plot, subplot, plot, xticks, xlim, ylim, xlabel, ylabel, show
 
 def setup_brian(tau):
@@ -24,7 +25,7 @@ def gen_spike_trains(tick, num_ticks, p):
 
 	return indices, times
 
-def visualise_connectivity(S, showPlot=True):
+def visualise_connectivity(S, show_plot=True):
     Ns = len(S.source)
     Nt = len(S.target)
     figure(figsize=(10, 4))
@@ -43,5 +44,25 @@ def visualise_connectivity(S, showPlot=True):
     ylim(-1, Nt)
     xlabel('Source neuron index')
     ylabel('Target neuron index')
-    if showPlot:
+    if show_plot:
     	show()
+
+class ProgressBar(object):
+    def __init__(self, toolbar_width):
+        self.toolbar_width = toolbar_width
+        self.ticks = 0
+
+    def __call__(self, elapsed, complete, start, duration):
+        if complete == 0.0:
+            # setup toolbar
+            sys.stdout.write("[%s]" % (" " * self.toolbar_width))
+            sys.stdout.flush()
+            sys.stdout.write("\b" * (self.toolbar_width + 1)) # return to start of line, after '['
+        else:
+            ticks_needed = int(round(complete * 40))
+            if self.ticks < ticks_needed:
+                sys.stdout.write("-" * (ticks_needed-self.ticks))
+                sys.stdout.flush()
+                self.ticks = ticks_needed
+        if complete == 1.0:
+            sys.stdout.write("\n")
